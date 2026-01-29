@@ -55,8 +55,6 @@ class MockSensorStream {
           a5Amp: a5Amp,
           a6Amp: a6Amp,
 
-          pressure: pressure,
-          temp: temp,
 
           systemMessage: systemMessage,
 

@@ -9,8 +9,6 @@ class SensorData {
   final double a6Error; // A6 ERROR DEGREE
   final double a5Amp; // A5 CURRENT AMPERE
   final double a6Amp; // A6 CURRENT AMPERE
-  final double pressure; // HYD SYSTEM PRESSURE (BAR)
-  final double temp; // HYD SYSTEM OIL TEMP
 
   /// ─── STATUS / TEXT ───
   final String systemMessage;
@@ -33,8 +31,6 @@ class SensorData {
     required this.a6Error,
     required this.a5Amp,
     required this.a6Amp,
-    required this.pressure,
-    required this.temp,
     required this.systemMessage,
     required this.a5lk1,
     required this.a5lk2,
@@ -54,9 +50,6 @@ class SensorData {
       a6Error: (json['a6_error'] as num).toDouble(),
       a5Amp: (json['a5_amp'] as num).toDouble(),
       a6Amp: (json['a6_amp'] as num).toDouble(),
-
-      pressure: (json['pressure'] as num).toDouble(),
-      temp: (json['temp'] as num).toDouble(),
 
       systemMessage: json['system_message'] ?? "SYSTEM OK",
 

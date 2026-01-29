@@ -1,6 +1,7 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:math';
 import 'package:steering/widgets/circular_gauge.dart';
-import 'package:steering/widgets/plot_chart.dart';
 import 'package:steering/widgets/theme_toggle_button.dart';
 import 'package:steering/themes/theme_provider.dart';
 import 'package:flutter/material.dart';
@@ -71,16 +72,18 @@ class _GraphScreenState extends State<GraphScreen> {
           if (snapshot.hasData) {
             buffer.add(snapshot.data!);
           }
-          final isWide = MediaQuery.of(context).size.width >= 800;
+          final isWide = MediaQuery.of(context).size.width >= 900;
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             child: Center(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  SizedBox(height: 25),
                   isWide
                       ? _wideLayout(snapshot, context)
                       : _narrowLayout(snapshot, context),
+                  SizedBox(height: 28),
                   Text(
                     _formattedDate,
                     style: Theme.of(context).textTheme.bodyLarge,
@@ -110,8 +113,7 @@ class _GraphScreenState extends State<GraphScreen> {
             color: Colors.amber,
           ),
         ),
-
-        const SizedBox(height: 40),
+        const SizedBox(height: 65),
 
         /// ─── AXLE 05 & AXLE 06 ───
         Row(
@@ -164,79 +166,56 @@ class _GraphScreenState extends State<GraphScreen> {
         child: Center(
           child: Column(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  SizedBox(
-                    height: height * 0.25,
-                    width: height * 0.35,
-
-                    child: FullCircularGauge(
-                      label: "PRESS. BAR",
-                      value: snapshot.data?.pressure ?? 0.0,
-                      min: 0,
-                      max: 50,
-                      unit: "bar",
-                      color: Colors.blue,
-                    ),
-                  ),
-                  SizedBox(
-                    height: height * 0.25,
-                    width: height * 0.35,
-                    child: FullCircularGauge(
-                      label: "TEMP. DEG C",
-                      value: snapshot.data?.temp ?? 0.0,
-                      min: 0,
-                      max: 100,
-                      unit: "°C",
-                      color: Colors.red,
-                    ),
-                  ),
-                ],
+              SizedBox(
+                width: 200,
+                height: 150,
+                child: FullCircularGauge(
+                  label: "AXLE 01",
+                  value: snapshot.data?.axle1 ?? 0.0,
+                  min: -35,
+                  max: 35,
+                  unit: "",
+                  color: Colors.amber,
+                ),
               ),
 
-              SizedBox(height: max(height * 0.02, 60)),
-
+              const SizedBox(height: 62),
               Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(
-                    height: 220,
-                    child: singleAxleChart(
-                      "AXLE 1",
-                      Colors.redAccent,
-                      (d) => d.axle1,
-                      -30,
-                      30,
-                      context,
-                      buffer,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      SizedBox(
+                        width: 200,
+                        height: 150,
+                        child: FullCircularGauge(
+                          label: "AXLE 05",
+                          value: snapshot.data?.axle5 ?? 0.0,
+                          min: -20,
+                          max: 20,
+                          unit: "",
+                          color: Colors.red,
+                        ),
+                      ),
+                      SizedBox(
+                        width: 200,
+                        height: 150,
+                        child: FullCircularGauge(
+                          label: "AXLE 06",
+                          value: snapshot.data?.axle6 ?? 0.0,
+                          min: -20,
+                          max: 20,
+                          unit: "",
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 220,
-                    child: singleAxleChart(
-                      "AXLE 5",
-                      Colors.blueAccent,
-                      (d) => d.axle5,
-                      -15,
-                      15,
-                      context,
-                      buffer,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 220,
-                    child: singleAxleChart(
-                      "AXLE 6",
-                      Colors.greenAccent,
-                      (d) => d.axle6,
-                      -15,
-                      15,
-                      context,
-                      buffer,
-                    ),
-                  ),
+                  const SizedBox(height: 45),
+
+                  _dataSection(snapshot),
                 ],
               ),
             ],
@@ -287,7 +266,7 @@ class _GraphScreenState extends State<GraphScreen> {
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.black12,
+              color: Colors.white12,
               border: Border.all(color: Colors.grey.shade600),
               borderRadius: BorderRadius.circular(6),
             ),
@@ -301,7 +280,7 @@ class _GraphScreenState extends State<GraphScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Column(
         children: [
           /// ERROR DEGREE
@@ -315,7 +294,7 @@ class _GraphScreenState extends State<GraphScreen> {
             ],
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 15),
 
           /// CURRENT AMPERE
           Wrap(
@@ -328,68 +307,70 @@ class _GraphScreenState extends State<GraphScreen> {
             ],
           ),
 
-          const SizedBox(height: 10),
-
-          /// HYDRAULICS
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 30,
-            runSpacing: 12,
-            children: [
-              dataBox("HYD PR (BAR)", "${d?.pressure ?? 0}"),
-              dataBox("OIL TEMP", "${d?.temp ?? 0}"),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
           /// SYSTEM MESSAGE
+          // Container(
+          //   width: double.infinity,
+          //   constraints: const BoxConstraints(maxWidth: 420),
+          //   padding: const EdgeInsets.all(12),
+          //   decoration: BoxDecoration(
+          //     color: Colors.white12,
+          //     border: Border.all(color: Colors.grey.shade600),
+          //     borderRadius: BorderRadius.circular(6),
+          //   ),
+          //   child: Text(
+          //     d?.systemMessage ?? "SYSTEM OK",
+          //     textAlign: TextAlign.center,
+          //     style: TextStyle(
+          //       fontWeight: FontWeight.bold,
+          //       color: _messageColor(d?.systemMessage),
+          //     ),
+          //   ),
+          // ),
+          const SizedBox(height: 15),
+
+          /// SOLENOID STATUS
           Container(
-            width: double.infinity,
             constraints: const BoxConstraints(maxWidth: 420),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.black12,
+              color: Colors.white12,
               border: Border.all(color: Colors.grey.shade600),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Text(
-              d?.systemMessage ?? "SYSTEM OK",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: _messageColor(d?.systemMessage),
-              ),
+            child: Column(
+              children: [
+                const Text(
+                  "SOLENOID STATUS",
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 16,
+                  runSpacing: 12,
+                  children: [
+                    SolStatus("A5LK1", d?.a5lk1 ?? false),
+                    SolStatus("A5LK2", d?.a5lk2 ?? false),
+                    SolStatus("A6LK1", d?.a6lk1 ?? false),
+                    SolStatus("A6LK2", d?.a6lk2 ?? false),
+                    SolStatus("LS", d?.ls ?? false),
+                  ],
+                ),
+              ],
             ),
-          ),
-
-          const SizedBox(height: 16),
-
-          /// SOLENOID STATUS
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 16,
-            runSpacing: 12,
-            children: [
-              SolStatus("A5LK1", d?.a5lk1 ?? false),
-              SolStatus("A5LK2", d?.a5lk2 ?? false),
-              SolStatus("A6LK1", d?.a6lk1 ?? false),
-              SolStatus("A6LK2", d?.a6lk2 ?? false),
-              SolStatus("LS", d?.ls ?? false),
-            ],
           ),
         ],
       ),
     );
   }
 
-  Color _messageColor(String? msg) {
-    if (msg == null) return Colors.green;
-    if (msg.contains("LOW") || msg.contains("HIGH")) {
-      return Colors.redAccent;
-    }
-    return Colors.green;
-  }
+  // Color _messageColor(String? msg) {
+  //   if (msg == null) return Colors.green;
+  //   if (msg.contains("LOW") || msg.contains("HIGH")) {
+  //     return Colors.redAccent;
+  //   }
+  //   return Colors.green;
+  // }
 }
 
 class _Legend extends StatelessWidget {

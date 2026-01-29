@@ -5,7 +5,7 @@ class AppThemes {
   static const Color lightPrimary = Color(0xFF1976D2);
   static const Color lightSecondary = Color(0xFF03DAC6);
   static const Color lightBackground = Color(0xFFFAFAFA);
-  static final Color lightScaffold = Colors.white70;
+  static final Color lightScaffold = Colors.blueGrey[100]!;
   static const Color lightAppBar = Color(0xFFF5F5F5);
   static const Color lightText = Color(0xFF212121);
   static const Color lightSubText = Color(0xFF757575);

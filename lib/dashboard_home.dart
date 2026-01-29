@@ -1,7 +1,5 @@
-import 'dart:io';
 import 'package:steering/models/sensor_data.dart';
 import 'package:steering/screens/graph_screen.dart';
-import 'package:steering/services/mock_sensor_stream.dart';
 import 'package:steering/services/serial_sensor_stream.dart';
 import 'package:flutter/material.dart';
 
@@ -19,20 +17,14 @@ class _DashboardHomeState extends State<DashboardHome> {
   @override
   void initState() {
     super.initState();
-
-    if (Platform.isLinux) {
-      serial = UdpSensorStream(ip: '192.168.0.107', port: 5005);
-      _source = serial;
-      stream = serial.stream;
-    } else {
-      _source = MockSensorStream();
-      stream = _source.stream;
-    }
+    serial = UdpSensorStream(ip: '192.168.0.108', port: 5005);
+    _source = serial;
+    stream = _source.stream;
   }
 
   @override
   void dispose() {
-    // serial.dispose(); // close serial properly
+    serial.dispose();
     super.dispose();
   }
 

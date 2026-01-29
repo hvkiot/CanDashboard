@@ -92,7 +92,7 @@ class _FullGaugePainter extends CustomPainter {
 
     /// Background Arc
     final bgPaint = Paint()
-      ..color = isDarkMode ? Colors.white12 : const Color(0xFFE0E0E0)
+      ..color = isDarkMode ? Colors.white12 : Colors.white
       ..strokeWidth = 14
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
