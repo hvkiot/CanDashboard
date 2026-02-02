@@ -81,11 +81,11 @@ class _GraphScreenState extends State<GraphScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: height * 0.02),
+                  SizedBox(height: height * 0.08),
                   isWide
                       ? _wideLayout(snapshot, context)
                       : _narrowLayout(snapshot, context),
-                  SizedBox(height: height * 0.05),
+                  SizedBox(height: height * 0.08),
                   Text(
                     _formattedDate,
                     style: Theme.of(context).textTheme.bodyLarge,
