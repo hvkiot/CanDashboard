@@ -52,36 +52,61 @@ class UdpSensorStream {
       _buffer = _buffer.substring(end + 1);
 
       try {
-        final Map<String, dynamic> json =
-            jsonDecode(frame) as Map<String, dynamic>;
+        final Map<String, dynamic> json = jsonDecode(frame);
 
-        _controller.add(
-          SensorData(
-            axle1: double.parse((json['Axle1'] ?? 0).toStringAsFixed(1)),
-            axle5: double.parse((json['Axle5'] ?? 0).toStringAsFixed(1)),
-            axle6: double.parse((json['Axle6'] ?? 0).toStringAsFixed(1)),
+        // Extract data with proper type conversion
+        final sensorData = SensorData(
+          // Axles - your JSON has "Axle1", "Axle5", "Axle6" (capital A)
+          axle1: _parseDouble(json['Axle1']),
+          axle5: _parseDouble(json['Axle5']),
+          axle6: _parseDouble(json['Axle6']),
 
-            a5Error: double.parse((json['A5_Err'] ?? 0).toStringAsFixed(1)),
-            a6Error: double.parse((json['A6_Err'] ?? 0).toStringAsFixed(1)),
-            a5Amp: double.parse((json['A5_C'] ?? 0).toStringAsFixed(1)),
-            a6Amp: double.parse((json['A6_C'] ?? 0).toStringAsFixed(1)),
+          // Errors - your JSON has "A5_Err", "A6_Err"
+          a5Error: _parseDouble(json['A5_Err']),
+          a6Error: _parseDouble(json['A6_Err']),
 
-            // Solenoids (0 / 1 / 2)
-            a5lk1: json['SOL1'] == 'ON' ? false : true,
-            a5lk2: json['SOL2'] == 'ON' ? false : true,
-            a6lk1: json['SOL3'] == 'ON' ? false : true,
-            a6lk2: json['SOL4'] == 'ON' ? false : true,
-            ls: json['SOL5'] == 'ON' ? false : true,
-            systemMessage: json['system_message'] ?? 'NO MESSAGE',
+          // Currents - your JSON has "A5_C", "A6_C"
+          a5Amp: _parseDouble(json['A5_C']),
+          a6Amp: _parseDouble(json['A6_C']),
 
-            time: DateTime.now(),
-          ),
+          // Solenoids - your JSON has "SOL1", "SOL2", etc. with "ON"/"OFF"
+          a5lk1: json['SOL1'] == 'ON',
+          a5lk2: json['SOL2'] == 'ON',
+          a6lk1: json['SOL3'] == 'ON',
+          a6lk2: json['SOL4'] == 'ON',
+          ls: json['SOL5'] == 'ON',
+
+          // System message
+          systemMessage: json['system_message']?.toString() ?? 'NO MESSAGE',
+
+          time: DateTime.now(),
         );
+
+        // Debug print
+        print(
+          '📦 Received: ${sensorData.axle1}, ${sensorData.axle5}, ${sensorData.axle6}',
+        );
+
+        _controller.add(sensorData);
       } catch (e) {
-        // Ignore malformed or partial frames
-        print('Error parsing UDP frame: $e');
+        print('❌ Error parsing JSON: $e');
+        print('   Raw frame: $frame');
       }
     }
+  }
+
+  double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      try {
+        return double.parse(value);
+      } catch (e) {
+        return 0.0;
+      }
+    }
+    return 0.0;
   }
 
   void dispose() {

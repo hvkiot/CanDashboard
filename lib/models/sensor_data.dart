@@ -40,26 +40,10 @@ class SensorData {
     required this.time,
   });
 
-  factory SensorData.fromJson(Map<String, dynamic> json) {
-    return SensorData(
-      axle1: (json['axle1'] as num).toDouble(),
-      axle5: (json['axle5'] as num).toDouble(),
-      axle6: (json['axle6'] as num).toDouble(),
-
-      a5Error: (json['a5_error'] as num).toDouble(),
-      a6Error: (json['a6_error'] as num).toDouble(),
-      a5Amp: (json['a5_amp'] as num).toDouble(),
-      a6Amp: (json['a6_amp'] as num).toDouble(),
-
-      systemMessage: json['system_message'] ?? "SYSTEM OK",
-
-      a5lk1: json['a5lk1'] == 1,
-      a5lk2: json['a5lk2'] == 1,
-      a6lk1: json['a6lk1'] == 1,
-      a6lk2: json['a6lk2'] == 1,
-      ls: json['ls'] == 1,
-
-      time: DateTime.now(), // auto timestamp
-    );
+  @override
+  String toString() {
+    return 'SensorData(axle1: $axle1, axle5: $axle5, axle6: $axle6, '
+        'a5Error: $a5Error, a6Error: $a6Error, a5Amp: $a5Amp, a6Amp: $a6Amp, '
+        'systemMessage: $systemMessage, time: $time)';
   }
 }
