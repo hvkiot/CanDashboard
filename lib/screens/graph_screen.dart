@@ -308,6 +308,7 @@ class _GraphScreenState extends State<GraphScreen> {
               dataBox("A6 AMP", "${d?.a6Amp ?? 0}"),
             ],
           ),
+          const SizedBox(height: 15),
 
           /// SYSTEM MESSAGE
           Container(
