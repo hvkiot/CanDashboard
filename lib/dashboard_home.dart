@@ -17,7 +17,7 @@ class _DashboardHomeState extends State<DashboardHome> {
   @override
   void initState() {
     super.initState();
-    serial = UdpSensorStream(ip: '192.168.0.108', port: 5005);
+    serial = UdpSensorStream(ip: '0.0.0.0', port: 5005);
     _source = serial;
     stream = _source.stream;
   }
