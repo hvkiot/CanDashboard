@@ -30,6 +30,7 @@ class UdpSensorStream {
 
         final dataStr = utf8.decode(dg.data, allowMalformed: true);
         _buffer += dataStr;
+        print(dataStr);
         // print('UDP Data Received: $dataStr');
         _processBuffer();
       }

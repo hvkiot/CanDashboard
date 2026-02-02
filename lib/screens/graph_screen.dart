@@ -72,18 +72,20 @@ class _GraphScreenState extends State<GraphScreen> {
           if (snapshot.hasData) {
             buffer.add(snapshot.data!);
           }
-          final isWide = MediaQuery.of(context).size.width >= 900;
+          final width = MediaQuery.of(context).size.width;
+          final height = MediaQuery.of(context).size.height;
+          final isWide = width >= 900;
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             child: Center(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: 25),
+                  SizedBox(height: height * 0.02),
                   isWide
                       ? _wideLayout(snapshot, context)
                       : _narrowLayout(snapshot, context),
-                  SizedBox(height: 28),
+                  SizedBox(height: height * 0.05),
                   Text(
                     _formattedDate,
                     style: Theme.of(context).textTheme.bodyLarge,
