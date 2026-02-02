@@ -310,24 +310,24 @@ class _GraphScreenState extends State<GraphScreen> {
           ),
 
           /// SYSTEM MESSAGE
-          // Container(
-          //   width: double.infinity,
-          //   constraints: const BoxConstraints(maxWidth: 420),
-          //   padding: const EdgeInsets.all(12),
-          //   decoration: BoxDecoration(
-          //     color: Colors.white12,
-          //     border: Border.all(color: Colors.grey.shade600),
-          //     borderRadius: BorderRadius.circular(6),
-          //   ),
-          //   child: Text(
-          //     d?.systemMessage ?? "SYSTEM OK",
-          //     textAlign: TextAlign.center,
-          //     style: TextStyle(
-          //       fontWeight: FontWeight.bold,
-          //       color: _messageColor(d?.systemMessage),
-          //     ),
-          //   ),
-          // ),
+          Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(maxWidth: 420),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white12,
+              border: Border.all(color: Colors.grey.shade600),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              d?.systemMessage ?? "SYSTEM OK",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: _messageColor(d?.systemMessage),
+              ),
+            ),
+          ),
           const SizedBox(height: 15),
 
           /// SOLENOID STATUS
@@ -366,13 +366,13 @@ class _GraphScreenState extends State<GraphScreen> {
     );
   }
 
-  // Color _messageColor(String? msg) {
-  //   if (msg == null) return Colors.green;
-  //   if (msg.contains("LOW") || msg.contains("HIGH")) {
-  //     return Colors.redAccent;
-  //   }
-  //   return Colors.green;
-  // }
+  Color _messageColor(String? msg) {
+    if (msg == null) return Colors.green;
+    if (msg.contains("LOW") || msg.contains("HIGH")) {
+      return Colors.redAccent;
+    }
+    return Colors.green;
+  }
 }
 
 class _Legend extends StatelessWidget {
