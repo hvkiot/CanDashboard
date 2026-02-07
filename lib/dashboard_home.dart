@@ -18,13 +18,17 @@ class _DashboardHomeState extends State<DashboardHome> {
     super.initState();
     canService = RapsCanService();
     canService.initialize();
+    print("CAN Service initialized");
 
     // Try assigning it directly to see if the error moves
     final localStream = canService.stream;
     stream = localStream;
+    print("Stream assigned");
+    print("Stream: ${stream.first}");
 
     Future.delayed(Duration(seconds: 1), () {
       canService.requestVoltage();
+      print("Voltage requested");
     });
   }
 
