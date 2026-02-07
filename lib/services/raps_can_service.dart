@@ -80,16 +80,17 @@ class RapsCanService {
 
     // Helper to package and send data back to the Main UI Isolate
     void emitData() {
+      print("Sending voltage: $voltage");
       mainSendPort.send(
         SensorData(
-          axle1: a1,
-          axle5: a5,
-          axle6: a6,
-          a5Error: a5Error,
-          a6Error: a6Error,
-          a5Amp: a5Amp,
-          a6Amp: a6Amp,
-          systemMessage: voltage.toStringAsFixed(1),
+          axle1: double.parse(a1.toStringAsFixed(2)),
+          axle5: double.parse(a5.toStringAsFixed(2)),
+          axle6: double.parse(a6.toStringAsFixed(2)),
+          a5Error: double.parse(a5Error.toStringAsFixed(2)),
+          a6Error: double.parse(a6Error.toStringAsFixed(2)),
+          a5Amp: double.parse(a5Amp.toStringAsFixed(2)),
+          a6Amp: double.parse(a6Amp.toStringAsFixed(2)),
+          systemMessage: voltage.toString(),
           ls: ls,
           a5lk1: a5lk1,
           a5lk2: a5lk2,
