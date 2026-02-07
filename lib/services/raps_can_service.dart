@@ -62,33 +62,34 @@ class RapsCanService {
     _controller.close();
   }
 
-  /// THE BACKGROUND WORKER (Runs in its own Isolate)
-  static void _backgroundWorker(SendPort mainSendPort) {
+  /// THE BACKGROUND WORKER (Runs in its own Isolate to prevent UI lag)
+  static void _backgroundWorker(SendPort mainSendPort) async {
     final receivePort = ReceivePort();
     mainSendPort.send(receivePort.sendPort);
 
     int socketFd = -1;
     bool running = false;
 
-    // --- State Variables ---
+    // --- RAPS State Variables ---
     double a1 = 0, a5 = 0, a6 = 0, voltage = 0;
     double a5Error = 0, a6Error = 0;
     double a5Amp = 0, a6Amp = 0;
 
-    // Solenoid Statuses
+    // Solenoid Statuses (True = ON/Energized, False = OFF)
     bool ls = false, a5lk1 = false, a5lk2 = false, a6lk1 = false, a6lk2 = false;
 
+    // Helper to package and send data back to the Main UI Isolate
     void emitData() {
       mainSendPort.send(
         SensorData(
           axle1: a1,
           axle5: a5,
           axle6: a6,
-          systemMessage: voltage.toStringAsFixed(1),
-          a5Amp: a5Amp,
-          a6Amp: a6Amp,
           a5Error: a5Error,
           a6Error: a6Error,
+          a5Amp: a5Amp,
+          a6Amp: a6Amp,
+          systemMessage: voltage.toStringAsFixed(1),
           ls: ls,
           a5lk1: a5lk1,
           a5lk2: a5lk2,
@@ -99,10 +100,10 @@ class RapsCanService {
       );
     }
 
-    // --- 1. Setup Socket ---
+    // --- 1. Linux SocketCAN Setup ---
     try {
       socketFd = socket(pfCan, sockRaw, canRaw);
-      if (socketFd < 0) throw Exception("Failed to open socket");
+      if (socketFd < 0) throw Exception("Failed to open CAN socket");
 
       final ifr = calloc<IfReq>();
       final ifName = "can0".codeUnits;
@@ -111,7 +112,7 @@ class RapsCanService {
       }
 
       if (ioctl(socketFd, siocGifIndex, ifr) < 0) {
-        throw Exception("can0 not found");
+        throw Exception("can0 interface not found");
       }
 
       final ifIndex = ifr.ref.ifrIfIndex;
@@ -122,7 +123,7 @@ class RapsCanService {
       addr.ref.canIfIndex = ifIndex;
 
       if (bind(socketFd, addr, sizeOf<SockAddrCan>()) < 0) {
-        throw Exception("Bind failed");
+        throw Exception("Failed to bind to can0");
       }
       calloc.free(addr);
 
@@ -133,94 +134,90 @@ class RapsCanService {
       return;
     }
 
-    // --- 2. Listen for Write Commands ---
+    // --- 2. Listen for Outgoing Commands (Calibration/UDS) ---
     receivePort.listen((message) {
-      if (message is _CanCommand && message.type == 'write') {
-        final frame = calloc<CanFrame>();
-        frame.ref.canId = (message.id ?? 0) | 0x80000000;
-        frame.ref.canDlc = 8;
-        for (int i = 0; i < 8; i++) {
-          frame.ref.data[i] = message.payload?[i] ?? 0;
+      if (message is _CanCommand) {
+        if (message.type == 'write') {
+          final frame = calloc<CanFrame>();
+          // Apply Extended ID bit (0x80000000) for 29-bit IDs
+          frame.ref.canId = (message.id ?? 0) | 0x80000000;
+          frame.ref.canDlc = 8;
+          for (int i = 0; i < 8; i++) {
+            frame.ref.data[i] = message.payload?[i] ?? 0;
+          }
+          write(socketFd, frame, sizeOf<CanFrame>());
+          calloc.free(frame);
         }
-        write(socketFd, frame, sizeOf<CanFrame>());
-        calloc.free(frame);
+      } else if (message.type == 'stop') {
+        running = false;
       }
     });
 
-    // --- 3. The Read Loop ---
+    // --- 3. The High-Speed Read Loop ---
     final framePtr = calloc<CanFrame>();
 
-    while (running) {
-      // Read 1 frame
-      if (read(socketFd, framePtr, sizeOf<CanFrame>()) > 0) {
-        final id = framePtr.ref.canId & 0x1FFFFFFF;
-        final data = framePtr.ref.data; // 'data' is the Array container
+    // Decoding Formulas
+    double decodeAngle(int lo, int hi) => ((hi << 8) | lo) / 256.0 - 125.0;
+    double decodeAmp(int lo, int hi) => ((hi << 8) | lo) - 32000.0;
+    try {
+      while (running) {
+        if (read(socketFd, framePtr, sizeOf<CanFrame>()) > 0) {
+          final id = framePtr.ref.canId & 0x1FFFFFFF; // Mask out priority bits
+          final data = framePtr.ref.data;
 
-        // --- DECODER 1: AXLE ANGLES (ID 0x18FF0108) ---
-        // Source [1]: A1(Byte0-1), A5(Byte2-3), A6(Byte4-5)
-        if (id == 0x18FF0108) {
-          double calc(int lo, int hi) => ((hi << 8) | lo) / 256.0 - 125.0;
-
-          // ✅ FIX APPLIED: accessing indices ...[3]
-          a1 = calc(data[0], data[1]);
-          a5 = calc(data[2], data[3]);
-          a6 = calc(data[4], data[5]);
-
-          emitData();
-        }
-        // --- DECODER 2: ERRORS & CURRENTS (ID 0x18FF0208) ---
-        // Source [1]: A5Err(0-1), A6Err(2-3), A5Cur(4-5), A6Cur(6-7)
-        else if (id == 0x18FF0208) {
-          double calcAngle(int lo, int hi) => ((hi << 8) | lo) / 256.0 - 125.0;
-          double calcAmp(int lo, int hi) => (((hi << 8) | lo) - 32000.0);
-
-          // ✅ FIX APPLIED: accessing indices ...[7]
-          a5Error = calcAngle(data[0], data[1]);
-          a6Error = calcAngle(data[2], data[3]);
-          a5Amp = calcAmp(data[4], data[5]);
-          a6Amp = calcAmp(data[6], data[7]);
-
-          emitData();
-        }
-        // --- DECODER 3: SOLENOID STATUS (ID 0x18FF0308) ---
-        // Source [1]: Page 52 Layout
-        else if (id == 0x18FF0308) {
-          // ✅ FIX APPLIED: Grab specific bytes first using []
-          int byte0 = data[0]; // Byte 0 (Bits 0-7)
-          int byte1 = data[1]; // Byte 1 (Bits 8-15)
-
-          // Decode using your corrected logic
-          int loadSol = byte0 & 0x03; // Bits 0-1
-          int a5Lock1 = (byte0 >> 2) & 0x03; // Bits 2-3
-          int a5Lock2 = (byte0 >> 4) & 0x03; // Bits 4-5
-          int a6Lock1 = (byte0 >> 6) & 0x03; // Bits 6-7
-          int a6Lock2 = byte1 & 0x03; // Byte 1 Bits 0-1 (Start Bit 8)
-
-          // 2 = Error (Binary 10)
-          ls = (loadSol == 2);
-          a5lk1 = (a5Lock1 == 2);
-          a5lk2 = (a5Lock2 == 2);
-          a6lk1 = (a6Lock1 == 2);
-          a6lk2 = (a6Lock2 == 2);
-
-          if (ls || a5lk1 || a5lk2 || a6lk1 || a6lk2) {
-            mainSendPort.send("⚠️ Solenoid Error!");
-          }
-          emitData();
-        }
-        // --- DECODER 4: UDS RESPONSE (ID 0x1BDAF108) ---
-        // Source [9]: UDS Server Details
-        else if (id == 0x1BDAF108) {
-          // ✅ FIX APPLIED: Check specific bytes for response signature
-          // Byte 1=Service(0x62), Byte 2=DID_H(0x22), Byte 3=DID_L(0x0F)
-          if (data[2] == 0x62 && data[4] == 0x22 && data[5] == 0x0F) {
-            // Value is in Bytes 4 and 5
-            int raw = (data[6] << 8) | data[3];
-            voltage = raw / 10.0;
+          // ID 0x18FF0108: Axle Angles
+          if (id == 0x18FF0108) {
+            a1 = decodeAngle(data[0], data[1]);
+            a5 = decodeAngle(data[2], data[3]);
+            a6 = decodeAngle(data[4], data[5]);
             emitData();
           }
+          // ID 0x18FF0208: Angle Errors & Solenoid Currents
+          else if (id == 0x18FF0208) {
+            a5Error = decodeAngle(data[0], data[1]);
+            a6Error = decodeAngle(data[2], data[3]);
+            a5Amp = decodeAmp(data[4], data[5]);
+            a6Amp = decodeAmp(data[6], data[7]);
+            emitData();
+          }
+          // ID 0x18FF0308: Solenoid Status Bits
+          else if (id == 0x18FF0308) {
+            int b0 = data[0];
+            int b1 = data[1];
+
+            // 01 = ON (Status check)
+            ls = (b0 & 0x03) == 1;
+            a5lk1 = ((b0 >> 2) & 0x03) == 1;
+            a5lk2 = ((b0 >> 4) & 0x03) == 1;
+            a6lk1 = ((b0 >> 6) & 0x03) == 1;
+            a6lk2 = (b1 & 0x03) == 1;
+
+            emitData();
+          }
+          // ID 0x1BDAF108: UDS Response (Voltage/Ack)
+          else if (id == 0x1BDAF108) {
+            // Check for Read DID (0x62) and Voltage DID (0x220F)
+            if (data[1] == 0x62 && data[2] == 0x22 && data[3] == 0x0F) {
+              int raw = (data[4] << 8) | data[5];
+              voltage = raw / 10.0;
+              emitData();
+            }
+          }
         }
+        await Future.delayed(Duration.zero);
+        // Brief yield to prevent CPU pegging (1ms is enough for 100Hz+)
+        // Note: Standard read() on SocketCAN is blocking; use select() or
+        // a small delay if the kernel doesn't yield.
       }
+    } catch (e) {
+      mainSendPort.send("❌ CAN Read Error: $e");
+    } finally {
+      calloc.free(framePtr);
+      if (socketFd >= 0) {
+        // Use the close() function from your interop to shut down the socket
+        // close(socketFd);
+      }
+      mainSendPort.send("Isolate Shutdown Cleanly");
     }
   }
 }
