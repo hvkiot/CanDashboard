@@ -21,12 +21,16 @@ typedef Write = int Function(int fd, Pointer<CanFrame> buf, int count);
 typedef IoctlFunc = Int32 Function(Int32 fd, Int32 request, Pointer<IfReq> ifr);
 typedef Ioctl = int Function(int fd, int request, Pointer<IfReq> ifr);
 
+typedef CloseFunc = Int32 Function(Int32 fd);
+typedef Close = int Function(int fd);
+
 // Bind C Functions to Dart
 final socket = libc.lookupFunction<SocketFunc, Socket>('socket');
 final bind = libc.lookupFunction<BindFunc, Bind>('bind');
 final read = libc.lookupFunction<ReadFunc, Read>('read');
 final write = libc.lookupFunction<WriteFunc, Write>('write');
 final ioctl = libc.lookupFunction<IoctlFunc, Ioctl>('ioctl');
+final close = libc.lookupFunction<CloseFunc, Close>('close');
 
 // C Structs mapped to Dart
 base class SockAddrCan extends Struct {

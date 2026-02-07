@@ -10,35 +10,36 @@ class DashboardHome extends StatefulWidget {
 }
 
 class _DashboardHomeState extends State<DashboardHome> {
-  late final RapsCanService canService;
-  late final Stream<SensorData> stream;
-  
+  RapsCanService? canService;
+  Stream<SensorData>? stream;
+
   @override
   void initState() {
     super.initState();
 
-    // Wrap in a Future to move the hardware logic OFF the UI thread
-    Future.delayed(Duration.zero, () {
-      try {
-        canService = RapsCanService();
-        canService.initialize();
-        setState(() {
-          stream = canService.stream;
-        });
-      } catch (e) {
-        print("Init Error: $e");
-      }
+    canService = RapsCanService();
+    canService!.initialize();
+
+    // The stream is available immediately as it's a broadcast controller
+    stream = canService!.stream;
+
+    // Small delay before requesting the first voltage readout
+    Future.delayed(Duration(seconds: 1), () {
+      canService?.requestVoltage();
     });
   }
 
   @override
   void dispose() {
-    canService.dispose();
+    canService?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: GraphScreen(stream: stream));
+    if (stream == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    return Scaffold(body: GraphScreen(stream: stream!));
   }
 }
