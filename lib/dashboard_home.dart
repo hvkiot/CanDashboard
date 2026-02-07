@@ -12,23 +12,22 @@ class DashboardHome extends StatefulWidget {
 class _DashboardHomeState extends State<DashboardHome> {
   late final RapsCanService canService;
   late final Stream<SensorData> stream;
-
+  
   @override
   void initState() {
     super.initState();
-    canService = RapsCanService();
-    canService.initialize();
-    print("CAN Service initialized");
 
-    // Try assigning it directly to see if the error moves
-    final localStream = canService.stream;
-    stream = localStream;
-    print("Stream assigned");
-    print("Stream: ${stream.first}");
-
-    Future.delayed(Duration(seconds: 1), () {
-      canService.requestVoltage();
-      print("Voltage requested");
+    // Wrap in a Future to move the hardware logic OFF the UI thread
+    Future.delayed(Duration.zero, () {
+      try {
+        canService = RapsCanService();
+        canService.initialize();
+        setState(() {
+          stream = canService.stream;
+        });
+      } catch (e) {
+        print("Init Error: $e");
+      }
     });
   }
 
