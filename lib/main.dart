@@ -11,12 +11,16 @@ void main() {
     SystemUiMode.immersiveSticky,
     overlays: [],
   );
-  runApp(
-    ChangeNotifierProvider(
-      create: (context) => ThemeProvider(),
-      child: const Dashboard(),
-    ),
-  );
+  try {
+    runApp(
+      ChangeNotifierProvider(
+        create: (context) => ThemeProvider(),
+        child: const Dashboard(),
+      ),
+    );
+  } catch (e) {
+    print("Main App Error: $e");
+  }
 }
 
 class Dashboard extends StatelessWidget {
