@@ -1,6 +1,6 @@
 import 'package:steering/models/sensor_data.dart';
 import 'package:steering/screens/graph_screen.dart';
-import 'package:steering/services/serial_sensor_stream.dart';
+import 'package:steering/services/raps_can_service.dart';
 import 'package:flutter/material.dart';
 
 class DashboardHome extends StatefulWidget {
@@ -10,21 +10,27 @@ class DashboardHome extends StatefulWidget {
 }
 
 class _DashboardHomeState extends State<DashboardHome> {
-  late final UdpSensorStream serial;
+  late final RapsCanService canService;
   late final Stream<SensorData> stream;
-  dynamic _source;
 
   @override
   void initState() {
     super.initState();
-    serial = UdpSensorStream(ip: '0.0.0.0', port: 5005);
-    _source = serial;
-    stream = _source.stream;
+    canService = RapsCanService();
+    canService.initialize();
+
+    // Try assigning it directly to see if the error moves
+    final localStream = canService.stream;
+    stream = localStream;
+
+    Future.delayed(Duration(seconds: 1), () {
+      canService.requestVoltage();
+    });
   }
 
   @override
   void dispose() {
-    serial.dispose();
+    canService.dispose();
     super.dispose();
   }
 

@@ -37,6 +37,7 @@ dependencies:
   provider: ^6.1.5+1
   libserialport: ^0.3.0+1
   fl_chart: ^1.1.1
+  ffi: ^2.1.5
 
 dev_dependencies:
   flutter_test:
