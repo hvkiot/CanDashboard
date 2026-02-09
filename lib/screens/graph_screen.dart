@@ -255,7 +255,7 @@ class _GraphScreenState extends State<GraphScreen> {
 
   Widget _buildControlPanel(BuildContext context, bool isOnline) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 40),
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white12,
