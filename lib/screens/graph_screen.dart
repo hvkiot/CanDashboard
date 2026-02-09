@@ -34,7 +34,7 @@ class _GraphScreenState extends State<GraphScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(decodedMsg),
+            content: Text(decodedMsg, style: TextStyle(color: Colors.white)),
             backgroundColor: isError
                 ? Colors.red.shade900
                 : Colors.green.shade900,
