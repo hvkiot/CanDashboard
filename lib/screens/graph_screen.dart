@@ -55,7 +55,7 @@ class _GraphScreenState extends State<GraphScreen> {
   Widget build(BuildContext context) {
     final dateTime = DateTime.now();
     final formattedDateTime = DateFormat(
-      'dd-MM-yyyy HH:mm:ss',
+      'dd-MM-yyyy / HH:mm:ss',
     ).format(dateTime);
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
@@ -72,9 +72,8 @@ class _GraphScreenState extends State<GraphScreen> {
           return SingleChildScrollView(
             child: Column(
               children: [
-                const SizedBox(height: 20),
                 _buildHeader(data),
-                const SizedBox(height: 20),
+                const SizedBox(height: 40),
 
                 // AXLE 1 - Master Gauge
                 Center(
@@ -131,8 +130,8 @@ class _GraphScreenState extends State<GraphScreen> {
                 _buildControlPanel(context, snapshot.hasData),
                 const SizedBox(height: 20),
                 Text(
-                  "Date & Time: $formattedDateTime",
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  formattedDateTime,
+                  style: const TextStyle(color: Colors.white, fontSize: 22),
                 ),
               ],
             ),
@@ -256,7 +255,7 @@ class _GraphScreenState extends State<GraphScreen> {
 
   Widget _buildControlPanel(BuildContext context, bool isOnline) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
+      margin: const EdgeInsets.symmetric(horizontal: 40),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white12,
