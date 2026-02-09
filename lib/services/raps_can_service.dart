@@ -50,6 +50,16 @@ class RapsCanService {
     });
   }
 
+  void calibrateAxle1() {
+    _sendPort?.send(
+      _CanCommand(
+        'write',
+        id: 0x1BDA08F1,
+        payload: [0x04, 0x2E, 0x22, 0x10, 0x00, 0x00, 0x00, 0x00],
+      ),
+    );
+  }
+
   void calibrateAxle5() {
     _sendPort?.send(
       _CanCommand(
@@ -66,6 +76,26 @@ class RapsCanService {
         'write',
         id: 0x1BDA08F1,
         payload: [0x04, 0x2E, 0x22, 0x12, 0x00, 0x00, 0x00, 0x00],
+      ),
+    );
+  }
+
+  void turnA5Min() {
+    _sendPort?.send(
+      _CanCommand(
+        'write',
+        id: 0x1BDA08F1,
+        payload: [0x04, 0x2E, 0x22, 0x15, 0xAA, 0xBB, 0x00, 0x00],
+      ),
+    );
+  }
+
+  void turnA5Max() {
+    _sendPort?.send(
+      _CanCommand(
+        'write',
+        id: 0x1BDA08F1,
+        payload: [0x04, 0x2E, 0x22, 0x16, 0xAA, 0xBB, 0x00, 0x00],
       ),
     );
   }

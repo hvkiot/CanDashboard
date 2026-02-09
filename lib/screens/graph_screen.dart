@@ -289,9 +289,74 @@ class _GraphScreenState extends State<GraphScreen> {
               ),
               ElevatedButton.icon(
                 icon: const Icon(Icons.settings_backup_restore),
+                label: const Text("CALIBRATE AXLE 1"),
+                onPressed: isOnline
+                    ? () => _showCalibrateDialog(
+                        context,
+                        () => widget.service.calibrateAxle1(),
+                        "AXLE 1",
+                      )
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.settings_backup_restore),
                 label: const Text("CALIBRATE AXLE 5"),
                 onPressed: isOnline
-                    ? () => _showCalibrateDialog(context)
+                    ? () => _showCalibrateDialog(
+                        context,
+                        () => widget.service.calibrateAxle5(),
+                        "AXLE 5",
+                      )
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.settings_backup_restore),
+                label: const Text("CALIBRATE AXLE 6"),
+                onPressed: isOnline
+                    ? () => _showCalibrateDialog(
+                        context,
+                        () => widget.service.calibrateAxle6(),
+                        "AXLE 6",
+                      )
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+
+              ElevatedButton.icon(
+                icon: const Icon(Icons.settings_backup_restore),
+                label: const Text("CALIBRATE AXLE 5 MIN"),
+                onPressed: isOnline
+                    ? () => _showCalibrateDialog(
+                        context,
+                        () => widget.service.turnA5Min(),
+                        "AXLE 5 MIN",
+                      )
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.settings_backup_restore),
+                label: const Text("CALIBRATE AXLE 5 MAX"),
+                onPressed: isOnline
+                    ? () => _showCalibrateDialog(
+                        context,
+                        () => widget.service.turnA5Max(),
+                        "AXLE 5 MAX",
+                      )
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,
@@ -305,7 +370,11 @@ class _GraphScreenState extends State<GraphScreen> {
     );
   }
 
-  void _showCalibrateDialog(BuildContext context) {
+  void _showCalibrateDialog(
+    BuildContext context,
+    Function() callback,
+    String label,
+  ) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -317,8 +386,8 @@ class _GraphScreenState extends State<GraphScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        content: const Text(
-          "Are you sure? This will reset Axle 5 sensor to ZERO via UDS Write (0x2E).",
+        content: Text(
+          "Are you sure? This will reset $label sensor to ZERO via UDS Write (0x2E).",
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -329,7 +398,7 @@ class _GraphScreenState extends State<GraphScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () {
-              widget.service.calibrateAxle5();
+              callback();
               Navigator.pop(context);
             },
             child: const Text("EXECUTE", style: TextStyle(color: Colors.white)),
