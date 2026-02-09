@@ -60,6 +60,16 @@ class RapsCanService {
     );
   }
 
+  void calibrateAxle6() {
+    _sendPort?.send(
+      _CanCommand(
+        'write',
+        id: 0x1BDA08F1,
+        payload: [0x04, 0x2E, 0x22, 0x12, 0x00, 0x00, 0x00, 0x00],
+      ),
+    );
+  }
+
   void requestVoltage() {
     _sendPort?.send(
       _CanCommand(
@@ -266,7 +276,7 @@ class RapsCanService {
       calloc.free(framePtr);
       if (socketFd >= 0) {
         // Use the close() function from your interop to shut down the socket
-        // close(socketFd);
+        close(socketFd);
       }
       mainSendPort.send("Isolate Shutdown Cleanly");
     }

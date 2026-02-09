@@ -4,6 +4,7 @@ import 'package:steering/models/sensor_data.dart';
 import 'package:steering/services/raps_can_service.dart';
 import 'package:steering/widgets/circular_gauge.dart';
 import 'package:steering/services/dtc_decoder.dart'; // Ensure this is imported
+import 'package:intl/intl.dart';
 
 class GraphScreen extends StatefulWidget {
   final Stream<SensorData> stream;
@@ -52,10 +53,14 @@ class _GraphScreenState extends State<GraphScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final dateTime = DateTime.now();
+    final formattedDateTime = DateFormat(
+      'dd-MM-yyyy HH:mm:ss',
+    ).format(dateTime);
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       appBar: AppBar(
-        title: const Text("RAPS SYSTEM DASHBOARD"),
+        title: const Text("REAR AXLE POWER STEERING SYSTEM"),
         backgroundColor: Colors.black,
         centerTitle: true,
       ),
@@ -67,6 +72,7 @@ class _GraphScreenState extends State<GraphScreen> {
           return SingleChildScrollView(
             child: Column(
               children: [
+                const SizedBox(height: 20),
                 _buildHeader(data),
                 const SizedBox(height: 20),
 
@@ -89,7 +95,7 @@ class _GraphScreenState extends State<GraphScreen> {
 
                 const SizedBox(height: 40),
 
-                // AXLE 5 & 6 - Slave Gauges
+                // AXLE 5 & 6 - Gauges & Solenoid Fault Monitor
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -97,6 +103,21 @@ class _GraphScreenState extends State<GraphScreen> {
                       "AXLE 5",
                       data.axle5,
                       Colors.greenAccent,
+                    ),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          "SOLENOID FAULT MONITOR",
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildSolenoidPanel(data),
+                      ],
                     ),
                     _buildGaugeSizedBox(
                       "AXLE 6",
@@ -106,21 +127,13 @@ class _GraphScreenState extends State<GraphScreen> {
                   ],
                 ),
 
-                const SizedBox(height: 40),
-                const Text(
-                  "SOLENOID FAULT MONITOR",
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildSolenoidPanel(data),
-
-                const SizedBox(height: 40),
+                const SizedBox(height: 60),
                 _buildControlPanel(context, snapshot.hasData),
                 const SizedBox(height: 20),
+                Text(
+                  "Date & Time: $formattedDateTime",
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
               ],
             ),
           );
