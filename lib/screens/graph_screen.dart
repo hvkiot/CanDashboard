@@ -29,10 +29,16 @@ class _GraphScreenState extends State<GraphScreen> {
       final decodedMsg = msg.contains('0x')
           ? DtcDecoder.getNrcDescription(0x22)
           : msg;
+      final isError = msg.contains("ECU Error") || msg.contains("❌");
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(decodedMsg), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(decodedMsg),
+            backgroundColor: isError
+                ? Colors.red.shade900
+                : Colors.green.shade900,
+          ),
         );
       }
     });
