@@ -102,24 +102,24 @@ def run_simulator():
         )
         bus.send(msg_solenoids)
 
-        # --- D. UDS SERVER RESPONDER ---
-        msg = bus.recv(timeout=0.01) # Small timeout for better CPU usage
+        # --- D. UDS SERVER RESPONDER (Updated for TATA 12x12 DIDs) ---
+        msg = bus.recv(timeout=0.01)
         if msg and msg.arbitration_id == 0x1BDA08F1:
-            # Standard UDS Frame: [Length, Service, DID_High, DID_Low, ...]
             service = msg.data[1]
-            did_high = msg.data[2]
-            did_low = msg.data[3]
+            did = (msg.data[2] << 8) | msg.data[3]
 
-            # Check for Read Voltage (Service 0x22, DID 0x220F)
-            if service == 0x22 and did_high == 0x22 and did_low == 0x0F:
-                print("🔵 UDS Request: Voltage. Replying 24.5V...")
-                resp = [0x04, 0x62, 0x22, 0x0F, 0x00, 0xF5, 0x00, 0x00]
+            if service == 0x22: # READ
+                if did == 0x220F: # Voltage
+                    print("🔵 UDS Request: Voltage. Replying 24.5V...")
+                    resp = [0x04, 0x62, 0x22, 0x0F, 0x00, 0xF5, 0x00, 0x00] # 24.5V
+                elif did == 0x2210: # Axle 1 Angle
+                    print("🔵 UDS Request: Axle 1 Angle. Replying 10.0°...")
+                    resp = [0x04, 0x62, 0x22, 0x10, 0x00, 0x64, 0x00, 0x00] # 10.0°
                 bus.send(can.Message(arbitration_id=0x1BDAF108, data=resp, is_extended_id=True))
 
-            # Check for Calibration Write (Service 0x2E, DID 0x2211)
-            elif service == 0x2E and did_high == 0x22 and did_low == 0x11:
-                print("🔴 UDS Command: CALIBRATE ZERO RECEIVED")
-                resp = [0x03, 0x6E, 0x22, 0x11, 0x00, 0x00, 0x00, 0x00]
+            elif service == 0x2E: # WRITE / CALIBRATE
+                print(f"🔴 TATA 12x12 Calibration Command Received for DID: {hex(did)}")
+                resp = [0x03, 0x6E, msg.data[2], msg.data[3], 0, 0, 0, 0]
                 bus.send(can.Message(arbitration_id=0x1BDAF108, data=resp, is_extended_id=True))
 
         # Timing

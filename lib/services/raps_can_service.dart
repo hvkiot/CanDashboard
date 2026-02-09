@@ -199,35 +199,37 @@ class RapsCanService {
           }
           // D. UDS VOLTAGE [Source 55] ID 0x1BDAF108: UDS Response (Voltage/Ack)
           else if (id == 0x1BDAF108) {
-            // Service ID is in data[1]
-            final service = data[1];
+            int serviceResponse = data[1];
+            int did = (data[2] << 8) | data[3];
 
-            // ReadDataByIdentifier Response (0x22 + 0x40 = 0x62)
-            if (service == 0x62 && data[2] == 0x22 && data[3] == 0x0F) {
-              // Voltage data is in data[4] and data[5] (Big Endian)
-              int raw = (data[4] << 8) | data[5];
-              voltage = raw / 10.0;
+            // A. Handle READ Responses (0x62)
+            if (serviceResponse == 0x62) {
+              switch (did) {
+                case 0x220F: // System Voltage
+                  int raw = (data[4] << 8) | data[5];
+                  voltage = raw / 10.0;
+                  break;
+                case 0x2210: // Axle 1 Angle via UDS
+                  int raw = (data[4] << 8) | data[5];
+                  a1 = raw / 10.0; // 0x22 resolution is 0.1 deg/bit
+                  break;
+                case 0x2211: // Axle 5 Angle via UDS
+                  int raw = (data[4] << 8) | data[5];
+                  a5 = raw / 10.0;
+                  break;
+              }
               emitData();
             }
-            // WriteDataByIdentifier Response (0x2E + 0x40 = 0x6E)
-            else if (service == 0x6E && data[2] == 0x22 && data[3] == 0x11) {
+            // B. Handle WRITE/CALIBRATION Responses (0x6E)
+            else if (serviceResponse == 0x6E) {
+              String action = (did == 0x2211) ? "Axle 5 Zero" : "Axle 6 Zero";
+              mainSendPort.send("✅ $action Calibration Successful");
+            }
+            // C. Handle NEGATIVE Responses (0x7F)
+            else if (serviceResponse == 0x7F) {
+              int errorCode = data[3]; // NRC (Negative Response Code)
               mainSendPort.send(
-                SensorData(
-                  axle1: a1,
-                  axle5: a5,
-                  axle6: a6,
-                  a5Error: a5Error,
-                  a6Error: a6Error,
-                  a5Amp: a5Amp,
-                  a6Amp: a6Amp,
-                  systemMessage: voltage.toString(),
-                  ls: ls,
-                  a5lk1: a5lk1,
-                  a5lk2: a5lk2,
-                  a6lk1: a6lk1,
-                  a6lk2: a6lk2,
-                  time: DateTime.now(),
-                ),
+                "❌ ECU Rejected Command. Error Code: 0x${errorCode.toRadixString(16)}",
               );
             }
           }
