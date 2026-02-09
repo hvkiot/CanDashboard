@@ -78,9 +78,10 @@ class RapsCanService {
     // Solenoid Statuses (True = ON/Energized, False = OFF)
     bool ls = false, a5lk1 = false, a5lk2 = false, a6lk1 = false, a6lk2 = false;
 
+    String sysMsg = "SYSTEM HEALTHY";
     // Helper to package and send data back to the Main UI Isolate
+
     void emitData() {
-      print("Sending voltage: $voltage");
       mainSendPort.send(
         SensorData(
           axle1: double.parse(a1.toStringAsFixed(2)),
@@ -90,7 +91,7 @@ class RapsCanService {
           a6Error: double.parse(a6Error.toStringAsFixed(2)),
           a5Amp: double.parse(a5Amp.toStringAsFixed(2)),
           a6Amp: double.parse(a6Amp.toStringAsFixed(2)),
-          systemMessage: voltage.toString(),
+          systemMessage: sysMsg,
           ls: ls,
           a5lk1: a5lk1,
           a5lk2: a5lk2,
@@ -166,14 +167,14 @@ class RapsCanService {
           final id = framePtr.ref.canId & 0x1FFFFFFF; // Mask out priority bits
           final data = framePtr.ref.data;
 
-          // ID 0x18FF0108: Axle Angles
+          // A. ANGLES [Source 57] ID 0x18FF0108: Axle Angles
           if (id == 0x18FF0108) {
             a1 = decodeAngle(data[0], data[1]);
             a5 = decodeAngle(data[2], data[3]);
             a6 = decodeAngle(data[4], data[5]);
             emitData();
           }
-          // ID 0x18FF0208: Angle Errors & Solenoid Currents
+          // B. ERRORS & CURRENTS [Source 57] ID 0x18FF0208: Angle Errors & Solenoid Currents
           else if (id == 0x18FF0208) {
             a5Error = decodeAngle(data[0], data[1]);
             a6Error = decodeAngle(data[2], data[3]);
@@ -181,21 +182,21 @@ class RapsCanService {
             a6Amp = decodeAmp(data[6], data[7]);
             emitData();
           }
-          // ID 0x18FF0308: Solenoid Status Bits
+          // C. SOLENOID STATUS [Source 57] ID 0x18FF0308: Solenoid Status Bits
           else if (id == 0x18FF0308) {
             int b0 = data[0];
             int b1 = data[1];
 
-            // 01 = ON (Status check)
-            ls = (b0 & 0x03) == 1;
-            a5lk1 = ((b0 >> 2) & 0x03) == 1;
-            a5lk2 = ((b0 >> 4) & 0x03) == 1;
-            a6lk1 = ((b0 >> 6) & 0x03) == 1;
-            a6lk2 = (b1 & 0x03) == 1;
+            // Status: 00=Off, 01=On, 10=Error(2), 11=NA
+            ls = (b0 & 0x03) == 2;
+            a5lk1 = ((b0 >> 2) & 0x03) == 2;
+            a5lk2 = ((b0 >> 4) & 0x03) == 2;
+            a6lk1 = ((b0 >> 6) & 0x03) == 2;
+            a6lk2 = (b1 & 0x03) == 2;
 
             emitData();
           }
-          // ID 0x1BDAF108: UDS Response (Voltage/Ack)
+          // D. UDS VOLTAGE [Source 55] ID 0x1BDAF108: UDS Response (Voltage/Ack)
           else if (id == 0x1BDAF108) {
             // Service ID is in data[1]
             final service = data[1];
@@ -229,6 +230,13 @@ class RapsCanService {
               );
             }
           }
+          // --- LOGIC: SYSTEM MESSAGE [Source 2] ---
+          if (ls || a5lk1 || a5lk2 || a6lk1 || a6lk2) {
+            sysMsg = "STEERING FAULT: SOLENOID";
+          } else if (voltage < 22.0 && voltage > 1.0) {
+            sysMsg = "LOW VOLTAGE WARNING";
+          }
+          emitData();
         }
         await Future.delayed(Duration.zero);
         // Brief yield to prevent CPU pegging (1ms is enough for 100Hz+)
