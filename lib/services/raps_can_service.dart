@@ -197,11 +197,19 @@ class RapsCanService {
           }
           // ID 0x1BDAF108: UDS Response (Voltage/Ack)
           else if (id == 0x1BDAF108) {
-            // Check for Read DID (0x62) and Voltage DID (0x220F)
-            if (data[1] == 0x62 && data[2] == 0x22 && data[3] == 0x0F) {
+            // Service ID is in data[1]
+            final service = data[1];
+
+            // ReadDataByIdentifier Response (0x22 + 0x40 = 0x62)
+            if (service == 0x62 && data[2] == 0x22 && data[3] == 0x0F) {
+              // Voltage data is in data[4] and data[5] (Big Endian)
               int raw = (data[4] << 8) | data[5];
               voltage = raw / 10.0;
               emitData();
+            }
+            // WriteDataByIdentifier Response (0x2E + 0x40 = 0x6E)
+            else if (service == 0x6E && data[2] == 0x22 && data[3] == 0x11) {
+              mainSendPort.send("✅ Calibration Successful");
             }
           }
         }
