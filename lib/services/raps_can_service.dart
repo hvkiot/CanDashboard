@@ -3,6 +3,7 @@ import 'dart:ffi';
 import 'dart:isolate';
 import 'package:ffi/ffi.dart';
 import 'package:steering/models/sensor_data.dart';
+import 'package:steering/services/dtc_decoder.dart';
 import 'socketcan_interop.dart';
 
 /// Commands sent from Main Isolate to Background Isolate
@@ -20,10 +21,12 @@ class RapsCanService {
 
   Stream<SensorData> get stream => _controller.stream;
 
+  // NEW: A separate stream for one-time diagnostic events (Snackbars/Dialogs)
+  final _msgController = StreamController<String>.broadcast();
+  Stream<String> get messages => _msgController.stream;
+
   void initialize() async {
     final receivePort = ReceivePort();
-
-    // Spawn the background isolate
     _isolate = await Isolate.spawn(_backgroundWorker, receivePort.sendPort);
 
     receivePort.listen((message) {
@@ -31,7 +34,17 @@ class RapsCanService {
         _sendPort = message;
       } else if (message is SensorData) {
         _controller.add(message);
+      }
+      // NEW: Handle the structured UDS Error
+      else if (message is UdsError) {
+        // The Service uses the Decoder, so the UI doesn't have to!
+        final description = DtcDecoder.getNrcDescription(message.code);
+        _msgController.add("ECU Error: $description");
       } else if (message is String) {
+        // Handle success strings or logs
+        if (message.startsWith("✅")) {
+          _msgController.add(message);
+        }
         print("CAN Isolate Log: $message");
       }
     });
@@ -225,12 +238,13 @@ class RapsCanService {
               String action = (did == 0x2211) ? "Axle 5 Zero" : "Axle 6 Zero";
               mainSendPort.send("✅ $action Calibration Successful");
             }
-            // C. Handle NEGATIVE Responses (0x7F)
+            // C. Handle NEGATIVE Responses (0x7F) [Source 55]
             else if (serviceResponse == 0x7F) {
-              int errorCode = data[3]; // NRC (Negative Response Code)
-              mainSendPort.send(
-                "❌ ECU Rejected Command. Error Code: 0x${errorCode.toRadixString(16)}",
-              );
+              int rejectedService = data[2]; // e.g., 0x2E (Write)
+              int errorCode = data[3]; // The NRC (Negative Response Code)
+
+              // Pass the raw hex to the Main Isolate for translation
+              mainSendPort.send(UdsError(rejectedService, errorCode));
             }
           }
           // --- LOGIC: SYSTEM MESSAGE [Source 2] ---
@@ -257,4 +271,10 @@ class RapsCanService {
       mainSendPort.send("Isolate Shutdown Cleanly");
     }
   }
+}
+
+class UdsError {
+  final int service;
+  final int code;
+  UdsError(this.service, this.code);
 }
