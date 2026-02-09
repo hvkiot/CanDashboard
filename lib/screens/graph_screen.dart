@@ -1,5 +1,4 @@
-// ignore_for_file: deprecated_member_use
-
+import 'dart:async';
 import 'dart:math';
 import 'package:steering/widgets/circular_gauge.dart';
 import 'package:steering/widgets/theme_toggle_button.dart';
@@ -8,10 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:steering/services/chart_buffer.dart';
 import 'package:steering/models/sensor_data.dart';
+import 'package:steering/services/raps_can_service.dart';
 
 class GraphScreen extends StatefulWidget {
   final Stream<SensorData> stream;
-  const GraphScreen({super.key, required this.stream});
+  final RapsCanService service;
+  const GraphScreen({super.key, required this.stream, required this.service});
 
   @override
   State<GraphScreen> createState() => _GraphScreenState();
@@ -33,6 +34,7 @@ class _GraphScreenState extends State<GraphScreen> {
     super.initState();
     stream = widget.stream;
     startTime = DateTime.now();
+    _setupMessageListener();
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
         setState(() {
@@ -40,6 +42,27 @@ class _GraphScreenState extends State<GraphScreen> {
         });
       }
     });
+  }
+
+  StreamSubscription? _sub;
+  void _setupMessageListener() {
+    _sub = stream.listen((data) {
+      if (data.systemMessage.contains("Successful") ||
+          data.systemMessage.contains("Success")) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data.systemMessage),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
   }
 
   @override
@@ -310,26 +333,11 @@ class _GraphScreenState extends State<GraphScreen> {
           ),
           const SizedBox(height: 30),
 
-          /// SYSTEM MESSAGE
-          // Container(
-          //   width: double.infinity,
-          //   constraints: const BoxConstraints(maxWidth: 420),
-          //   padding: const EdgeInsets.all(12),
-          //   decoration: BoxDecoration(
-          //     color: Colors.white12,
-          //     border: Border.all(color: Colors.grey.shade600),
-          //     borderRadius: BorderRadius.circular(6),
-          //   ),
-          //   child: Text(
-          //     d?.systemMessage ?? "SYSTEM OK",
-          //     textAlign: TextAlign.center,
-          //     style: TextStyle(
-          //       fontWeight: FontWeight.bold,
-          //       color: _messageColor(d?.systemMessage),
-          //     ),
-          //   ),
-          // ),
-          // const SizedBox(height: 15),
+          const SizedBox(height: 15),
+
+          _udsSection(snapshot),
+
+          const SizedBox(height: 30),
 
           /// SOLENOID STATUS
           Container(
@@ -367,13 +375,107 @@ class _GraphScreenState extends State<GraphScreen> {
     );
   }
 
-  // Color _messageColor(String? msg) {
-  //   if (msg == null) return Colors.green;
-  //   if (msg.contains("LOW") || msg.contains("HIGH")) {
-  //     return Colors.redAccent;
-  //   }
-  //   return Colors.green;
-  // }
+  Widget _udsSection(AsyncSnapshot<SensorData> snapshot) {
+    final hasData = snapshot.hasData;
+    final d = snapshot.data;
+    // Show "0.0" if no data, or if message contains "Success" (don't show string as voltage)
+    final voltage = (d != null && !d.systemMessage.contains("Success"))
+        ? d.systemMessage
+        : "0.0";
+
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 420),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white12,
+        border: Border.all(color: Colors.blueAccent, width: 2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          const Text(
+            "UDS CONTROL PANEL",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.blueAccent,
+              letterSpacing: 1.1,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Column(
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: hasData
+                        ? () => widget.service.requestVoltage()
+                        : null,
+                    icon: const Icon(Icons.bolt, size: 18),
+                    label: const Text("Request Voltage"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueGrey.shade800,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    "$voltage V",
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              ElevatedButton.icon(
+                onPressed: hasData ? () => _showCalibrationDialog() : null,
+                icon: const Icon(Icons.settings_backup_restore, size: 18),
+                label: const Text("Zero Calibration"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orangeAccent,
+                  foregroundColor: Colors.black,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCalibrationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey.shade900,
+        title: const Text(
+          "Zero Calibration",
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          "Ensure Axles are at 0° before proceeding.",
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              widget.service.calibrateAxle5();
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            child: const Text("Execute", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _Legend extends StatelessWidget {

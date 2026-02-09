@@ -40,6 +40,8 @@ class _DashboardHomeState extends State<DashboardHome> {
     if (stream == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    return Scaffold(body: GraphScreen(stream: stream!));
+    return Scaffold(
+      body: GraphScreen(stream: stream!, service: canService!),
+    );
   }
 }

@@ -209,7 +209,25 @@ class RapsCanService {
             }
             // WriteDataByIdentifier Response (0x2E + 0x40 = 0x6E)
             else if (service == 0x6E && data[2] == 0x22 && data[3] == 0x11) {
-              mainSendPort.send("✅ Calibration Successful");
+              voltage = 0.0; // Clear voltage or keep last
+              mainSendPort.send(
+                SensorData(
+                  axle1: a1,
+                  axle5: a5,
+                  axle6: a6,
+                  a5Error: a5Error,
+                  a6Error: a6Error,
+                  a5Amp: a5Amp,
+                  a6Amp: a6Amp,
+                  systemMessage: "✅ Calibration Successful",
+                  ls: ls,
+                  a5lk1: a5lk1,
+                  a5lk2: a5lk2,
+                  a6lk1: a6lk1,
+                  a6lk2: a6lk2,
+                  time: DateTime.now(),
+                ),
+              );
             }
           }
         }
