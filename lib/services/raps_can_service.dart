@@ -92,6 +92,7 @@ class RapsCanService {
           a5Amp: double.parse(a5Amp.toStringAsFixed(2)),
           a6Amp: double.parse(a6Amp.toStringAsFixed(2)),
           systemMessage: sysMsg,
+          voltage: double.parse(voltage.toStringAsFixed(2)),
           ls: ls,
           a5lk1: a5lk1,
           a5lk2: a5lk2,

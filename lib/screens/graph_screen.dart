@@ -147,7 +147,7 @@ class GraphScreen extends StatelessWidget {
                 style: TextStyle(color: Colors.grey, fontSize: 12),
               ),
               Text(
-                "${d.voltage.toStringAsFixed(1)} V",
+                "${d.voltage.toStringAsFixed(2)} V",
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -184,7 +184,7 @@ class GraphScreen extends StatelessWidget {
           height: 30,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
+            color: color.withValues(alpha: 0.2),
             border: Border.all(color: color, width: 2),
             borderRadius: BorderRadius.circular(4),
           ),
@@ -213,7 +213,7 @@ class GraphScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white12,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blueAccent.withOpacity(0.5)),
+        border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.5)),
       ),
       child: Column(
         children: [
