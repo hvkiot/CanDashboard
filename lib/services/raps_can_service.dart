@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ffi';
 import 'dart:isolate';
 import 'package:ffi/ffi.dart';
+import 'package:logger/logger.dart';
 import 'package:steering/models/sensor_data.dart';
 import 'package:steering/services/dtc_decoder.dart';
 import 'socketcan_interop.dart';
@@ -45,7 +46,7 @@ class RapsCanService {
         if (message.startsWith("✅")) {
           _msgController.add(message);
         }
-        print("CAN Isolate Log: $message");
+        Logger().i("CAN Isolate Log: $message");
       }
     });
   }

@@ -4,6 +4,7 @@ import 'package:steering/themes/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:logger/logger.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +20,7 @@ void main() {
       ),
     );
   } catch (e) {
-    print("Main App Error: $e");
+    Logger().e("Main App Error: $e");
   }
 }
 
