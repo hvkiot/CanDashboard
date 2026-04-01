@@ -163,13 +163,13 @@ class RapsCanService {
       if (socketFd < 0) throw Exception("Failed to open CAN socket");
 
       final ifr = calloc<IfReq>();
-      final ifName = "can0".codeUnits;
+      final ifName = "can1".codeUnits;
       for (int i = 0; i < ifName.length; i++) {
         ifr.ref.ifrName[i] = ifName[i];
       }
 
       if (ioctl(socketFd, siocGifIndex, ifr) < 0) {
-        throw Exception("can0 interface not found");
+        throw Exception("can1 interface not found");
       }
 
       final ifIndex = ifr.ref.ifrIfIndex;
@@ -180,7 +180,7 @@ class RapsCanService {
       addr.ref.canIfIndex = ifIndex;
 
       if (bind(socketFd, addr, sizeOf<SockAddrCan>()) < 0) {
-        throw Exception("Failed to bind to can0");
+        throw Exception("Failed to bind to can1");
       }
       calloc.free(addr);
 
