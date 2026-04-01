@@ -49,12 +49,14 @@ class CanSensorStream {
 
       final bytesRead = read(_fd, _frame, sizeOf<CanFrame>());
       if (bytesRead > 0) {
+        print("CAN Frame: ${_frame.ref.canId}");
         _processCanFrame(_frame);
       }
     });
   }
 
   void _processCanFrame(Pointer<CanFrame> frame) {
+    print("CAN Frame: ${_frame.ref.data}");
     final id = frame.ref.canId & canIdMask;
 
     // Update ONLY the fields present in this specific frame
