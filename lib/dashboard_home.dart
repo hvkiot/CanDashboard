@@ -10,21 +10,19 @@ class DashboardHome extends StatefulWidget {
 }
 
 class _DashboardHomeState extends State<DashboardHome> {
-  late final UdpSensorStream serial;
-  late final Stream<SensorData> stream;
-  dynamic _source;
+  late final CanSensorStream canStream;
+  late final Stream<CombinedState> stream;
 
   @override
   void initState() {
     super.initState();
-    serial = UdpSensorStream(ip: '0.0.0.0', port: 5005);
-    _source = serial;
-    stream = _source.stream;
+    canStream = CanSensorStream('can1'); // Standard SocketCAN interface
+    stream = canStream.stream;
   }
 
   @override
   void dispose() {
-    serial.dispose();
+    canStream.dispose();
     super.dispose();
   }
 

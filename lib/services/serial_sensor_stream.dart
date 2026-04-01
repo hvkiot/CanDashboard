@@ -1,116 +1,117 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
+import 'dart:ffi';
 import 'package:steering/models/sensor_data.dart';
+import 'package:steering/services/socketcan_interop.dart'; // Your FFI defines
+import 'package:ffi/ffi.dart';
 
-class UdpSensorStream {
-  final _controller = StreamController<SensorData>.broadcast();
-  Stream<SensorData> get stream => _controller.stream;
+class CanSensorStream {
+  final _controller = StreamController<CombinedState>.broadcast();
+  Stream<CombinedState> get stream => _controller.stream;
 
-  final String _ip;
-  final int _port;
+  // Persistent state: This prevents the "Snap back to Zero"
+  CombinedState _currentState = CombinedState.initial();
 
-  String _buffer = '';
-  RawDatagramSocket? _socket;
+  late int _fd;
+  bool _running = true;
+  late Pointer<CanFrame> _frame; // Keep persistent for the loop
 
-  UdpSensorStream({required String ip, required int port})
-    : _ip = ip,
-      _port = port {
-    _init();
+  CanSensorStream(String interface) {
+    _init(interface);
   }
 
-  void _init() async {
-    _socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, _port);
-    print('Listening for UDP on $_ip:$_port');
+  void _init(String interface) {
+    try {
+      // 1. Open and Bind Socket (using your FFI methods)
+      _fd = socket(pfCan, sockRaw, canRaw);
+      // final ifr = calloc<IfReq>();
+      // ... (Include your ioctl and bind logic here for 'interface')
 
-    _socket!.listen((event) {
-      if (event == RawSocketEvent.read) {
-        final dg = _socket!.receive();
-        if (dg == null) return;
+      print('✅ SocketCAN listening on $interface');
+      _startReadLoop();
+    } catch (e) {
+      _updateState(
+        (current) => current.copyWith(
+          uds: current.uds.copyWith(systemMessage: "ERROR: ${e.toString()}"),
+        ),
+      );
+    }
+  }
 
-        final dataStr = utf8.decode(dg.data, allowMalformed: true);
-        _buffer += dataStr;
-        print(dataStr);
-        // print('UDP Data Received: $dataStr');
-        _processBuffer();
+  void _startReadLoop() {
+    _frame = calloc<CanFrame>();
+
+    // We use a simplified loop. In a full app, move this to an Isolate.
+    Timer.periodic(const Duration(milliseconds: 10), (timer) {
+      if (!_running) {
+        timer.cancel();
+        return;
+      }
+
+      final bytesRead = read(_fd, _frame, sizeOf<CanFrame>());
+      if (bytesRead > 0) {
+        _processCanFrame(_frame);
       }
     });
   }
 
-  void _processBuffer() {
-    while (true) {
-      final start = _buffer.indexOf('<');
-      if (start == -1) {
-        if (_buffer.length > 4096) _buffer = '';
-        return;
+  void _processCanFrame(Pointer<CanFrame> frame) {
+    final id = frame.ref.canId & canIdMask;
+
+    // Update ONLY the fields present in this specific frame
+    _updateState((current) {
+      if (id == 0x18FF0108) {
+        return current.copyWith(
+          live: current.live.copyWith(
+            axle1: _parseAxle(frame.ref.data[0], frame.ref.data[1]),
+            axle5: _parseAxle(frame.ref.data[2], frame.ref.data[3]),
+            axle6: _parseAxle(frame.ref.data[4], frame.ref.data[5]),
+            time: DateTime.now(),
+          ),
+        );
       }
 
-      final end = _buffer.indexOf('>', start);
-      if (end == -1) return;
-
-      final frame = _buffer.substring(start + 1, end);
-      _buffer = _buffer.substring(end + 1);
-
-      try {
-        final Map<String, dynamic> json = jsonDecode(frame);
-
-        // Extract data with proper type conversion
-        final sensorData = SensorData(
-          // Axles - your JSON has "Axle1", "Axle5", "Axle6" (capital A)
-          axle1: _parseDouble(json['Axle1']),
-          axle5: _parseDouble(json['Axle5']),
-          axle6: _parseDouble(json['Axle6']),
-
-          // Errors - your JSON has "A5_Err", "A6_Err"
-          a5Error: _parseDouble(json['A5_Err']),
-          a6Error: _parseDouble(json['A6_Err']),
-
-          // Currents - your JSON has "A5_C", "A6_C"
-          a5Amp: _parseDouble(json['A5_C']),
-          a6Amp: _parseDouble(json['A6_C']),
-
-          // Solenoids - your JSON has "SOL1", "SOL2", etc. with "ON"/"OFF"
-          a5lk1: json['SOL1'] == 'ON',
-          a5lk2: json['SOL2'] == 'ON',
-          a6lk1: json['SOL3'] == 'ON',
-          a6lk2: json['SOL4'] == 'ON',
-          ls: json['SOL5'] == 'ON',
-
-          // System message
-          systemMessage: json['system_message']?.toString() ?? 'NO MESSAGE',
-
-          time: DateTime.now(),
+      if (id == 0x18FF0208) {
+        return current.copyWith(
+          live: current.live.copyWith(
+            a5Amp: (frame.ref.data[0] << 8 | frame.ref.data[1]).toDouble(),
+            a6Amp: (frame.ref.data[2] << 8 | frame.ref.data[3]).toDouble(),
+          ),
         );
-
-        // Debug print
-        print(
-          '📦 Received: ${sensorData.axle1}, ${sensorData.axle5}, ${sensorData.axle6}',
-        );
-
-        _controller.add(sensorData);
-      } catch (e) {
-        print('❌ Error parsing JSON: $e');
-        print('   Raw frame: $frame');
       }
-    }
+
+      // Handle UDS Response for Polling
+      if (id == 0x1BDAF108 && frame.ref.data[1] == 0x62) {
+        final did = (frame.ref.data[2] << 8) | frame.ref.data[3];
+        if (did == 0x2210) {
+          // Axle 1 Poll DID
+          return current.copyWith(
+            live: current.live.copyWith(
+              axle1: _parseAxle(frame.ref.data[4], frame.ref.data[5]),
+            ),
+          );
+        }
+      }
+
+      return current; // Return unchanged if ID doesn't match
+    });
   }
 
-  double _parseDouble(dynamic value) {
-    if (value == null) return 0.0;
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
-    if (value is String) {
-      try {
-        return double.parse(value);
-      } catch (e) {
-        return 0.0;
-      }
-    }
-    return 0.0;
+  // Common Parsing Logic
+  double _parseAxle(int hi, int lo) {
+    // Standard J1939-style parsing for angles
+    return ((hi << 8) | lo) / 256.0 - 125.0;
+  }
+
+  // Helper to update state and notify UI
+  void _updateState(CombinedState Function(CombinedState) updates) {
+    _currentState = updates(_currentState);
+    _controller.add(_currentState);
   }
 
   void dispose() {
-    _socket?.close();
+    _running = false;
+    close(_fd);
     _controller.close();
+    calloc.free(_frame);
   }
 }

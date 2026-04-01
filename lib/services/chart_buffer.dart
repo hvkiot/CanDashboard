@@ -2,18 +2,18 @@ import 'package:steering/models/sensor_data.dart';
 
 class ChartBuffer {
   final int maxPoints;
-  final List<SensorData> _data = [];
+  final List<CombinedState> _data = [];
 
   ChartBuffer({this.maxPoints = 100});
 
-  void add(SensorData d) {
+  void add(CombinedState d) {
     _data.add(d);
     if (_data.length > maxPoints) {
       _data.removeAt(0);
     }
   }
 
-  List<SensorData> get data => List.unmodifiable(_data);
+  List<CombinedState> get data => List.unmodifiable(_data);
 }
 
 class ChartUtils {

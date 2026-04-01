@@ -3,8 +3,8 @@ import 'dart:math';
 import '../models/sensor_data.dart';
 
 class MockSensorStream {
-  final _controller = StreamController<SensorData>.broadcast();
-  Stream<SensorData> get stream => _controller.stream;
+  final _controller = StreamController<CombinedState>.broadcast();
+  Stream<CombinedState> get stream => _controller.stream;
 
   Timer? _timer;
   double _t = 0.0; // time accumulator
@@ -26,7 +26,7 @@ class MockSensorStream {
       final a5Amp = _fix(1.5 + 1.2 * sin(_t * 1.2)); // ~0.3–2.7 A
       final a6Amp = _fix(1.6 + 1.0 * sin(_t * 1.0));
 
-      /// ─── HYDRAULICS ───
+      /// ─── HYDRAULICS (INTERNAL MOCK) ───
       final pressure = _fix(150 + 20 * sin(_t * 0.3)); // BAR
       final temp = _fix(45 + 8 * sin(_t * 0.2)); // °C
 
@@ -45,26 +45,28 @@ class MockSensorStream {
           : "SYSTEM NORMAL";
 
       _controller.add(
-        SensorData(
-          axle1: axle1,
-          axle5: axle5,
-          axle6: axle6,
-
-          a5Error: a5Error,
-          a6Error: a6Error,
-          a5Amp: a5Amp,
-          a6Amp: a6Amp,
-
-
-          systemMessage: systemMessage,
-
-          a5lk1: a5lk1,
-          a5lk2: a5lk2,
-          a6lk1: a6lk1,
-          a6lk2: a6lk2,
-          ls: ls,
-
-          time: DateTime.now(),
+        CombinedState(
+          live: LiveSensorData(
+            axle1: axle1,
+            axle5: axle5,
+            axle6: axle6,
+            a5Error: a5Error,
+            a6Error: a6Error,
+            a5Amp: a5Amp,
+            a6Amp: a6Amp,
+            a5lk1: a5lk1,
+            a5lk2: a5lk2,
+            a6lk1: a6lk1,
+            a6lk2: a6lk2,
+            ls: ls,
+            time: DateTime.now(),
+          ),
+          uds: UdsSystemData(
+            voltage: 24.0 + sin(_t),
+            firmwareVersion: "MOCK-V1.0",
+            ecuSerial: 12345,
+            systemMessage: systemMessage,
+          ),
         ),
       );
     });

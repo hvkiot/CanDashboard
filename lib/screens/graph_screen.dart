@@ -10,7 +10,7 @@ import 'package:steering/services/chart_buffer.dart';
 import 'package:steering/models/sensor_data.dart';
 
 class GraphScreen extends StatefulWidget {
-  final Stream<SensorData> stream;
+  final Stream<CombinedState> stream;
   const GraphScreen({super.key, required this.stream});
 
   @override
@@ -19,7 +19,7 @@ class GraphScreen extends StatefulWidget {
 
 class _GraphScreenState extends State<GraphScreen> {
   final buffer = ChartBuffer(maxPoints: 840);
-  late Stream<SensorData> stream;
+  late Stream<CombinedState> stream;
   late DateTime startTime;
   late DateTime date = DateTime.now();
 
@@ -66,7 +66,7 @@ class _GraphScreenState extends State<GraphScreen> {
           ),
         ],
       ),
-      body: StreamBuilder<SensorData>(
+      body: StreamBuilder<CombinedState>(
         stream: stream,
         builder: (context, snapshot) {
           if (snapshot.hasData) {
@@ -99,7 +99,10 @@ class _GraphScreenState extends State<GraphScreen> {
     );
   }
 
-  Widget _wideLayout(AsyncSnapshot<SensorData> snapshot, BuildContext context) {
+  Widget _wideLayout(
+    AsyncSnapshot<CombinedState> snapshot,
+    BuildContext context,
+  ) {
     return Column(
       children: [
         /// ─── AXLE 01 (TOP CENTER) ───
@@ -108,7 +111,7 @@ class _GraphScreenState extends State<GraphScreen> {
           height: 150,
           child: FullCircularGauge(
             label: "AXLE 01",
-            value: snapshot.data?.axle1 ?? 0.0,
+            value: snapshot.data?.live.axle1 ?? 0.0,
             min: -35,
             max: 35,
             unit: "",
@@ -127,7 +130,7 @@ class _GraphScreenState extends State<GraphScreen> {
               height: 150,
               child: FullCircularGauge(
                 label: "AXLE 05",
-                value: snapshot.data?.axle5 ?? 0.0,
+                value: snapshot.data?.live.axle5 ?? 0.0,
                 min: -20,
                 max: 20,
                 unit: "",
@@ -140,7 +143,7 @@ class _GraphScreenState extends State<GraphScreen> {
               height: 150,
               child: FullCircularGauge(
                 label: "AXLE 06",
-                value: snapshot.data?.axle6 ?? 0.0,
+                value: snapshot.data?.live.axle6 ?? 0.0,
                 min: -20,
                 max: 20,
                 unit: "",
@@ -154,7 +157,7 @@ class _GraphScreenState extends State<GraphScreen> {
   }
 
   Widget _narrowLayout(
-    AsyncSnapshot<SensorData> snapshot,
+    AsyncSnapshot<CombinedState> snapshot,
     BuildContext context,
   ) {
     final height = MediaQuery.of(context).size.height;
@@ -173,7 +176,7 @@ class _GraphScreenState extends State<GraphScreen> {
                 height: 150,
                 child: FullCircularGauge(
                   label: "AXLE 01",
-                  value: snapshot.data?.axle1 ?? 0.0,
+                  value: snapshot.data?.live.axle1 ?? 0.0,
                   min: -35,
                   max: 35,
                   unit: "",
@@ -194,7 +197,7 @@ class _GraphScreenState extends State<GraphScreen> {
                         height: 150,
                         child: FullCircularGauge(
                           label: "AXLE 05",
-                          value: snapshot.data?.axle5 ?? 0.0,
+                          value: snapshot.data?.live.axle5 ?? 0.0,
                           min: -20,
                           max: 20,
                           unit: "",
@@ -206,7 +209,7 @@ class _GraphScreenState extends State<GraphScreen> {
                         height: 150,
                         child: FullCircularGauge(
                           label: "AXLE 06",
-                          value: snapshot.data?.axle6 ?? 0.0,
+                          value: snapshot.data?.live.axle6 ?? 0.0,
                           min: -20,
                           max: 20,
                           unit: "",
@@ -256,8 +259,9 @@ class _GraphScreenState extends State<GraphScreen> {
     );
   }
 
-  Widget _dataSection(AsyncSnapshot<SensorData> snapshot) {
-    final d = snapshot.data;
+  Widget _dataSection(AsyncSnapshot<CombinedState> snapshot) {
+    final live = snapshot.data?.live;
+    // final uds = snapshot.data?.uds; //TODO: Setup UDS Data
     Widget dataBox(String label, String value) {
       return Column(
         children: [
@@ -291,8 +295,8 @@ class _GraphScreenState extends State<GraphScreen> {
             spacing: 40,
             runSpacing: 12,
             children: [
-              dataBox("A5 ERROR", "${d?.a5Error ?? 0}"),
-              dataBox("A6 ERROR", "${d?.a6Error ?? 0}"),
+              dataBox("A5 ERROR", "${live?.a5Error ?? 0}"),
+              dataBox("A6 ERROR", "${live?.a6Error ?? 0}"),
             ],
           ),
 
@@ -304,8 +308,8 @@ class _GraphScreenState extends State<GraphScreen> {
             spacing: 40,
             runSpacing: 12,
             children: [
-              dataBox("A5 AMP", "${d?.a5Amp ?? 0}"),
-              dataBox("A6 AMP", "${d?.a6Amp ?? 0}"),
+              dataBox("A5 AMP", "${live?.a5Amp ?? 0}"),
+              dataBox("A6 AMP", "${live?.a6Amp ?? 0}"),
             ],
           ),
           const SizedBox(height: 30),
@@ -352,11 +356,11 @@ class _GraphScreenState extends State<GraphScreen> {
                   spacing: 16,
                   runSpacing: 12,
                   children: [
-                    SolStatus("A5LK1", d?.a5lk1 ?? false),
-                    SolStatus("A5LK2", d?.a5lk2 ?? false),
-                    SolStatus("A6LK1", d?.a6lk1 ?? false),
-                    SolStatus("A6LK2", d?.a6lk2 ?? false),
-                    SolStatus("LS", d?.ls ?? false),
+                    SolStatus("A5LK1", live?.a5lk1 ?? false),
+                    SolStatus("A5LK2", live?.a5lk2 ?? false),
+                    SolStatus("A6LK1", live?.a6lk1 ?? false),
+                    SolStatus("A6LK2", live?.a6lk2 ?? false),
+                    SolStatus("LS", live?.ls ?? false),
                   ],
                 ),
               ],
